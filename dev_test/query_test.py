@@ -3564,7 +3564,7 @@ if __name__ == '__main__':
 					""")
 		'''
 		# q510b - tested NOT OK - complicated query not implemented properly yet
-		'''
+		
 		cur.execute("""
 					SELECT weekly_current.delivery_location_team AS unit_delivery_team,
 					(CASE
@@ -3586,7 +3586,7 @@ if __name__ == '__main__':
 					END),
 					weekly_current.result_week
 					""")
-		'''
+		
 		# q510c - tested NOT OK - testing not completed
 		'''
 		cur.execute("""
@@ -3595,7 +3595,7 @@ if __name__ == '__main__':
 					FROM activity_pattern_trend
 					WHERE activity_pattern_resulted_funded.funding_source = activity_pattern_trend.funding_source
 					AND activity_pattern_resulted_funded.result_week = activity_pattern_trend.week_2018
-					AND (Left(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_resulted_funded.unit_delivery_team
+					AND (LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_resulted_funded.unit_delivery_team
 					""")
 		'''
 		# q511 - tested NOT OK - complicated query not implemented properly yet
@@ -3863,7 +3863,7 @@ if __name__ == '__main__':
 					""")
 		'''
 		# q515 - large query need to find another way to build
-		
+		'''
 		cur.execute("""
 					INSERT INTO team_activity ( location, division, funding_source, contract_course, contract_course_name,
 												remoteness, total_target, total_enrolled, total_resulted, unit_delivery_team,
@@ -3893,55 +3893,95 @@ if __name__ == '__main__':
 					HAVING student_unit_attempt.unit_funding_source IN ('11N','11V','11H')
 					AND student_unit_attempt.delivery_remoteness = 'REMOTE'
 					""")
-		
-		# q515a - tested NOT OK - need to check the logic on this implementation
+		'''
+		# q515a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE team_activity
-					SET team_activity.[Total Target] = [AHC], team_activity.[Remote Target] = [AHC]
+					SET team_activity.total_target = ahc, team_activity.remote_target = ahc
 					FROM xlookup_target
 					WHERE team_activity.location = xlookup_target.location
 					AND team_activity.contract_course = xlookup_target.contract_course_unit
 					AND team_activity.unit_delivery_team = xlookup_target.contract_team
 					AND team_activity.funding_source = xlookup_target.funding
-					AND team_activity.Remoteness='remote'
-					AND ((team_activity.[Funding Source])="11n" Or (team_activity.[Funding Source])="11v" Or (team_activity.[Funding Source])="11h")
-					AND xlookup_target.ahc<>0
+					AND team_activity.remoteness = 'REMOTE'
+					AND team_activity.funding_source IN ('11N','11V','11H')
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q515b - tested NOT OK - large query need to determine how to implement
+		# q515b - NOT tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Unit Delivery Team], Division, Location, [Funding Source], [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Urban Target], [Urban Enrolled], [Urban resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [remote Target], [remote Enrolled], [remote resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, Sum(xlookup_TARGET.AHC) AS SumOfAHC, 0 AS Expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, Sum(xlookup_TARGET.AHC) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM (xlookup_TARGET LEFT JOIN TEAM_ACTIVITY ON (xlookup_TARGET.Funding = TEAM_ACTIVITY.[Funding Source]) AND (xlookup_TARGET.[Contract Course/Unit] = TEAM_ACTIVITY.[Contract Course]) AND (xlookup_TARGET.Location = TEAM_ACTIVITY.Location) AND (xlookup_TARGET.[Contract Team] = TEAM_ACTIVITY.[Unit Delivery Team]) AND (xlookup_TARGET.Remoteness = TEAM_ACTIVITY.Remoteness)) INNER JOIN xlookup_COURSE ON xlookup_TARGET.[Contract Course/Unit] = xlookup_COURSE.Code
-					GROUP BY xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
-					HAVING (((xlookup_TARGET.Funding) In ("11N","11V","11H")) AND ((xlookup_TARGET.Remoteness)="remote") AND ((TEAM_ACTIVITY.[Unit Delivery Team]) Is Null) AND ((TEAM_ACTIVITY.Location) Is Null) AND ((TEAM_ACTIVITY.[Contract Course]) Is Null) AND ((TEAM_ACTIVITY.[Funding Source]) Is Null) AND ((TEAM_ACTIVITY.Remoteness) Is Null));
+					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source, contract_course,
+												contract_course_name, remoteness, total_target, total_enrolled, total_resulted,
+												urban_target, urban_enrolled, urban_resulted, regional_target, regional_enrolled,
+												regional_resulted, remote_target, remote_enrolled, remote_resulted, interstate_target,
+												interstate_enrolled, interstate_resulted )
+					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location, xlookup_target.funding,
+							xlookup_target.contract_course_unit, xlookup_course.description, xlookup_target.remoteness,
+							SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8, 0 AS expr9,
+							0 AS expr10, 0 AS expr11, 0 AS expr12, SUM(xlookup_target.ahc) AS sum_of_ahc1, 0 AS expr5, 0 AS expr6,
+							0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM xlookup_target
+					LEFT JOIN team_activity
+					ON xlookup_target.funding = team_activity.funding_source
+					AND xlookup_target.contract_course_unit = team_activity.contract_course
+					AND xlookup_target.location = team_activity.location
+					AND xlookup_target.contract_team = team_activity.unit_delivery_team
+					AND xlookup_target.remoteness = team_activity.remoteness
+					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
+					GROUP BY 	xlookup_target.contract_team,
+								xlookup_target.division_school,
+								xlookup_target.location,
+								xlookup_target.funding,
+								xlookup_target.contract_course_unit,
+								xlookup_COURSE.description,
+								xlookup_target.remoteness, expr1, expr2, expr7, expr8, expr9,
+								expr10, expr11, expr12, expr5, expr6,
+								team_activity.unit_delivery_team,
+								team_activity.location,
+								team_activity.contract_course,
+								team_activity.funding_source,
+								team_activity.remoteness, exp13, exp14, exp15
+					HAVING xlookup_target.funding IN ('11N','11V','11H')
+					AND xlookup_target.Remoteness = 'REMOTE'
+					AND team_activity.unit_delivery_team IS NULL
+					AND team_activity.location IS NULL
+					AND team_activity.contract_course IS NULL
+					AND team_activity.funding_source IS Null
+					AND team_activity.remoteness IS NULL
 					""")
 		'''
 		# q516 - tested NOT OK - need to check the implementation of this
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Funding Source], Division, [Contract Course], [Contract Course Name],
-												[Total Target], [Total Enrolled], [Total Resulted], Remoteness,
-												[Unit Delivery Team], [Urban Target], [Urban Enrolled], [Urban resulted],
-												[Remote Target], [Remote Enrolled], [Remote Resulted], [Regional Target],
-												[Regional Enrolled], [Regional Resulted], [Interstate Target],
-												[Interstate Enrolled], [Interstate Resulted] )
-					SELECT DISTINCT STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division,
-									STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name],
-									0 AS Expr7, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC],
-									Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC],
-									STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], xlookup_TEAM.Description,
-									0 AS Expr8, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC1],
-									Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC1], 0 AS Expr1,
-									0 AS Expr2, 0 AS Expr3, 0 AS Expr5, 0 AS Expr6, 0 AS Expr4, 0 AS exp13, 0 AS exp14,
+					INSERT INTO team_activity ( funding_source, division, contract_course, contract_course_name,
+												total_target, total_enrolled, total_resulted, remoteness,
+												unit_delivery_team, urban_target, urban_enrolled, urban_resulted,
+												remote_target, remote_enrolled, remote_resulted, regional_target,
+												regional_enrolled, regional_resulted, interstate_target,
+												interstate_enrolled, interstate_resulted )
+					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division,
+									student_unit_attempt.course_code, student_unit_attempt.course_name,
+									0 AS expr7, SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc,
+									student_unit_attempt.delivery_remoteness, xlookup_team.description,
+									0 AS expr8, SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc1,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1, 0 AS expr1,
+									0 AS expr2, 0 AS expr3, 0 AS expr5, 0 AS expr6, 0 AS expr4, 0 AS exp13, 0 AS exp14,
 									0 AS exp15
-					FROM STUDENT_UNIT_ATTEMPT, xlookup_TEAM
-					WHERE (((Left([code],3))=[delivery location team])
-					AND ((STUDENT_UNIT_ATTEMPT.Outcome)<>"SW" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"NS" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"CT" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"RPL-CA"))
-					GROUP BY STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], xlookup_TEAM.Description, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-					HAVING (((STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11n" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11v" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11h") AND ((STUDENT_UNIT_ATTEMPT.[Delivery Remoteness])="urban"));
+					FROM student_unit_attempt, xlookup_team
+					WHERE LEFT(code,3) = delivery_location_team
+					AND student_unit_attempt.outcome NOT IN ('SW','NS','CT','RPL-CA')
+					GROUP BY 	student_unit_attempt.unit_funding_source,
+								student_unit_attempt.division,
+								student_unit_attempt.course_code,
+								student_unit_attempt.course_name,
+								student_unit_attempt.delivery_remoteness,
+								xlookup_team.description, expr7, expr8, expr1, expr2, expr3, expr5, expr6,
+								expr4, exp13, exp14, exp15
+					HAVING student_unit_attempt.unit_funding_source NOT IN ('11N','11V','11H')
+					AND student_unit_attempt.delivery_remoteness = 'URBAN'
 					""")
 		'''
 		# q516a - tested NOT OK - need to check the logic
@@ -3950,105 +3990,249 @@ if __name__ == '__main__':
 					UPDATE team_activity
 					SET team_activity.total_target = ahc, team_activity.urban_target = ahc
 					FROM xlookup_target
-					WHERE (team_activity.funding_source = xlookup_target.funding
-					AND (team_activity.unit_delivery_team = xlookup_target.contract_team
-					AND (team_activity.contract_course = xlookup_target.contract_course_unit
+					WHERE team_activity.funding_source = xlookup_target.funding
+					AND team_activity.unit_delivery_team = xlookup_target.contract_team
+					AND team_activity.contract_course = xlookup_target.contract_course_unit
 					AND team_activity.remoteness = xlookup_target.remoteness
-					AND (((team_activity.[Funding Source])<>"11n" And (team_activity.[Funding Source])<>"11V" And (team_activity.[Funding Source])<>"11h")
-					AND team_activity.remoteness)='URBAN'
-					AND xlookup_target.ahc)<>0
+					AND team_activity.funding_source NOT IN ('11N','11V','11H')
+					AND team_activity.remoteness = 'URBAN'
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
 		# q516b - tested NOT OK - large query need to determine how to implement
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Unit Delivery Team], Division, Location, [Funding Source], [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [urban Target], [urban Enrolled], [urban resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [Remote Target], [Remote Enrolled], [Remote Resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, Sum(xlookup_TARGET.AHC) AS SumOfAHC, 0 AS Expr1, 0 AS expr2, Sum(xlookup_TARGET.AHC) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS expr7, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM (xlookup_TARGET LEFT JOIN TEAM_ACTIVITY ON (xlookup_TARGET.[Contract Team] = TEAM_ACTIVITY.[Unit Delivery Team]) AND (xlookup_TARGET.[Contract Course/Unit] = TEAM_ACTIVITY.[Contract Course]) AND (xlookup_TARGET.Funding = TEAM_ACTIVITY.[Funding Source]) AND (xlookup_TARGET.Remoteness = TEAM_ACTIVITY.Remoteness)) INNER JOIN xlookup_COURSE ON xlookup_TARGET.[Contract Course/Unit] = xlookup_COURSE.Code
-					GROUP BY xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
-					HAVING (((xlookup_TARGET.Funding) Not In ("11N","11V","11H")) AND ((xlookup_TARGET.Remoteness)="urban") AND ((TEAM_ACTIVITY.[Unit Delivery Team]) Is Null) AND ((TEAM_ACTIVITY.Location) Is Null) AND ((TEAM_ACTIVITY.[Contract Course]) Is Null) AND ((TEAM_ACTIVITY.[Funding Source]) Is Null) AND ((TEAM_ACTIVITY.Remoteness) Is Null));
+					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source, contract_course,
+												contract_course_name, remoteness, total_target, total_enrolled,
+												total_resulted, urban_target, urban_enrolled, urban_resulted,
+												regional_target, regional_enrolled, regional_resulted, remote_target,
+												remote_enrolled, remote_resulted, interstate_target, interstate_enrolled,
+												interstate_resulted )
+					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
+							xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
+							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
+							SUM(xlookup_target.ahc) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS expr7, 0 AS expr8,
+							0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM xlookup_target
+					LEFT JOIN team_activity
+					ON xlookup_TARGET.contract_team = team_activity.unit_delivery_team
+					AND xlookup_target.contract_course_unit = team_activity.contract_course
+					AND xlookup_target.funding = team_activity.funding_source
+					AND xlookup_target.remoteness = team_activity.remoteness
+					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
+					GROUP BY 	xlookup_target.contract_team,
+								xlookup_target.division_school,
+								xlookup_target.location,
+								xlookup_target.funding,
+								xlookup_target.contract_course_unit,
+								xlookup_course.description,
+								xlookup_target.remoteness, expr1, expr2, expr5, expr6,
+								expr7, expr8, expr9, expr10, expr11, expr12,
+								team_activity.unit delivery team,
+								team_activity.location,
+								team_activity.contract_course,
+								team_activity.funding_source,
+								team_activity.remoteness, exp13, exp14, exp15
+					HAVING xlookup_target.funding NOT IN ('11N','11V','11H')
+					AND xlookup_target.remoteness = 'URBAN'
+					AND team_activity.unit_delivery_team IS NULL
+					AND team_activity.location IS NULL
+					AND team_activity.contract_course IS NULL
+					AND team_activity.funding_source IS NULL
+					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q517 - tested NOT OK - larege query need to determine how to implement
+		# q517 - NOT tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Funding Source], Division, [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Unit Delivery Team], [Urban Target], [Urban Enrolled], [Urban resulted], [Remote Target], [Remote Enrolled], [Remote Resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT DISTINCT STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], 0 AS Expr7, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC], xlookup_TEAM.Description, 0 AS Expr8, 0 AS Expr9, 0 AS Expr10, 0 AS Expr1, 0 AS Expr2, 0 AS Expr3, 0 AS Expr5, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC1], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC1], 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM STUDENT_UNIT_ATTEMPT, xlookup_TEAM
-					WHERE (((Left([code],3))=[delivery location team]) AND ((STUDENT_UNIT_ATTEMPT.Outcome)<>"SW" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"NS" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"CT" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"RPL-CA"))
-					GROUP BY STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], xlookup_TEAM.Description, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-					HAVING (((STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11n" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11v" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11h") AND ((STUDENT_UNIT_ATTEMPT.[Delivery Remoteness])="regional"));
+					INSERT INTO team_activity ( funding_source, division, contract_course, contract_course_name, remoteness, total_target,
+												total_enrolled, total_resulted, unit_delivery team, urban_target, urban_enrolled,
+												urban_resulted, remote_target, remote_enrolled, remote_resulted, regional_target,
+												regional_enrolled, regional_resulted, interstate_target, interstate_enrolled, interstate_resulted )
+					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division,
+									student_unit_attempt.course_code, student_unit_attempt.course_name,
+									student_unit_attempt.delivery_remoteness, 0 AS expr7,
+									SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc,
+									xlookup_team.description, 0 AS expr8, 0 AS expr9, 0 AS expr10,
+									0 AS expr1, 0 AS expr2, 0 AS expr3, 0 AS expr5,
+									SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc1,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1,
+									0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM student_unit_attempt, xlookup_team
+					WHERE LEFT(code,3)) = delivery_location_team
+					AND (student_unit_attempt.outcome) NOT IN ('SW','NS','CT','RPL-CA')
+					GROUP BY 	student_unit_attempt.unit_funding_source,
+								student_unit_attempt.division,
+								student_unit_attempt.course_code,
+								student_unit_attempt.course_name,
+								student_unit_attempt.delivery_remoteness,
+								xlookup_team.description, expr7, expr8, expr9, expr10, expr1,
+								expr2, expr3, expr5, exp13, exp14, exp15
+					HAVING student_unit_attempt.unit_funding_source NOT IN ('11N','11V','11H')
+					AND student_unit_attempt.delivery_remoteness = 'REGIONAL'
 					""")
 		'''
-		# q517a - tested NOT OK
+		# q517a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE team_activity
-					SET team_activity.[Total Target] = [AHC], team_activity.[Regional Target] = [AHC]
+					SET team_activity.total_target = ahc, team_activity.regional_target = ahc
 					FROM xlookup_target
-					WHERE (team_activity.[Funding Source] = xlookup_target.Funding)
-					AND (team_activity.[Unit Delivery Team] = xlookup_target.[Contract Team])
-					AND (team_activity.[Contract Course] = xlookup_target.[Contract Course/Unit])
-					AND (team_activity.Remoteness = xlookup_target.Remoteness)
-					AND (((team_activity.Remoteness)="regional") AND ((team_activity.[Funding Source])<>"11n" And (team_activity.[Funding Source])<>"11V" And (TEAM_ACTIVITY.[Funding Source])<>"11h")
-					AND ((xlookup_TARGET.AHC)<>0));
+					WHERE team_activity.funding_source = xlookup_target.funding
+					AND team_activity.unit_delivery_team = xlookup_target.contract_team
+					AND team_activity.contract_course = xlookup_target.contract_course_unit
+					AND team_activity.remoteness = xlookup_target.remoteness
+					AND team_activity.remoteness = 'REGIONAL'
+					AND team_activity.funding_source NOT IN ('11N','11V','11H')
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q517b - large query look at ways to implement
+		# q517b - NOT tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Unit Delivery Team], Division, Location, [Funding Source], [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Urban Target], [Urban Enrolled], [Urban resulted], [regional Target], [regional Enrolled], [regional resulted], [Remote Target], [Remote Enrolled], [Remote Resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, Sum(xlookup_TARGET.AHC) AS SumOfAHC, 0 AS Expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8, 0 AS expr9, Sum(xlookup_TARGET.AHC) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM (xlookup_TARGET LEFT JOIN TEAM_ACTIVITY ON (xlookup_TARGET.Remoteness = TEAM_ACTIVITY.Remoteness) AND (xlookup_TARGET.[Contract Course/Unit] = TEAM_ACTIVITY.[Contract Course]) AND (xlookup_TARGET.Funding = TEAM_ACTIVITY.[Funding Source]) AND (xlookup_TARGET.[Contract Team] = TEAM_ACTIVITY.[Unit Delivery Team])) INNER JOIN xlookup_COURSE ON xlookup_TARGET.[Contract Course/Unit] = xlookup_COURSE.Code
-					GROUP BY xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
-					HAVING (((xlookup_TARGET.Funding) Not In ("11N","11V","11H")) AND ((xlookup_TARGET.Remoteness)="regional") AND ((TEAM_ACTIVITY.[Unit Delivery Team]) Is Null) AND ((TEAM_ACTIVITY.Location) Is Null) AND ((TEAM_ACTIVITY.[Contract Course]) Is Null) AND ((TEAM_ACTIVITY.[Funding Source]) Is Null) AND ((TEAM_ACTIVITY.Remoteness) Is Null));
+					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source,
+												contract_course, contract_course_name, remoteness, total_target,
+												total_enrolled, total_resulted, urban_target, urban_enrolled,
+												urban_resulted, regional_target, regional_enrolled, regional_resulted,
+												remote_target, remote_enrolled, remote_resulted, interstate_target,
+												interstate_enrolled, interstate_resulted )
+					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.Location,
+							xlookup_target.Funding, xlookup_target.contract_course_unit, xlookup_course.description,
+							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
+							0 AS expr7, 0 AS expr8, 0 AS expr9, SUM(xlookup_target.ahc) AS sum_of_ahc1, 0 AS expr5,
+							0 AS expr6, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM (xlookup_target
+					LEFT JOIN team_activity
+					ON xlookup_target.remoteness = team_activity.remoteness
+					AND xlookup_target.contract_course_unit = team_activity.contract_course
+					AND xlookup_target.funding = team_activity.funding_source
+					AND xlookup_target.contract_team = team_activity.unit_delivery_team
+					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
+					GROUP BY 	xlookup_target.contract_team,
+								xlookup_target.division_school,
+								xlookup_target.Location,
+								xlookup_target.Funding,
+								xlookup_target.contract_course_unit,
+								xlookup_COURSE.Description,
+								xlookup_target.Remoteness, expr1, expr2, expr7, expr8, expr9, expr5,
+								expr6, expr10, expr11, expr12, team_activity.unit_delivery_team, team_activity.location,
+								team_activity.contract_course, team_activity.funding_source, team_activity.remoteness,
+								exp13, exp14, exp15
+					HAVING xlookup_target.Funding NOT IN ('11N','11V','11H')
+					AND xlookup_target.Remoteness = 'REGIONAL'
+					AND TEAM_ACTIVITY.unit_delivery_team IS NULL
+					AND TEAM_ACTIVITY.location IS NULL
+					AND TEAM_ACTIVITY.contract_course IS NULL
+					AND TEAM_ACTIVITY.funding_source IS NULL
+					AND TEAM_ACTIVITY.remoteness IS NULL
 					""")
 		'''
-		# q518 - large query look at ways to implement
+		# q518 - NOT Tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Funding Source], Division, [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Unit Delivery Team], [Urban Target], [Urban Enrolled], [Urban resulted], [Remote Target], [Remote Enrolled], [Remote Resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT DISTINCT STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], 0 AS Expr7, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC], xlookup_TEAM.Description, 0 AS Expr8, 0 AS Expr9, 0 AS Expr10, 0 AS Expr1, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC1], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC1], 0 AS Expr5, 0 AS Expr4, 0 AS Expr6, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM STUDENT_UNIT_ATTEMPT, xlookup_TEAM
-					WHERE (((Left([code],3))=[delivery location team]) AND ((STUDENT_UNIT_ATTEMPT.Outcome)<>"SW" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"NS" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"CT" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"RPL-CA"))
-					GROUP BY STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], xlookup_TEAM.Description, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-					HAVING (((STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11n" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11v" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11h") AND ((STUDENT_UNIT_ATTEMPT.[Delivery Remoteness])="remote"));
+					INSERT INTO team_activity ( funding_source, division, contract_course, contract course name,
+												remoteness, total target, total enrolled, total resulted,
+												unit delivery team, urban target, urban enrolled, urban resulted,
+												remote target, remote enrolled, remote resulted, regional target,
+												regional enrolled, regional resulted, interstate target,
+												interstate enrolled, interstate resulted )
+					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division,
+									student_unit_attempt.course_code, student_unit_attempt.course_name,
+									student_unit_attempt.delivery_remoteness, 0 AS expr7,
+									SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc,
+									xlookup_team.description, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr1,
+									SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc1,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1,
+									0 AS expr5, 0 AS expr4, 0 AS expr6, 0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM student_unit_attempt, xlookup_team
+					WHERE LEFT(code,3) = delivery_location_team
+					AND student_unit_attempt.outcome NOT IN ('SW','NS','CT','RPL-CA')
+					GROUP BY 	student_unit_attempt.unit funding source,
+								student_unit_attempt.division,
+								student_unit_attempt.course_code,
+								student_unit_attempt.course_name,
+								student_unit_attempt.delivery_remoteness,
+								xlookup_team.description, expr7, expr8, expr9, expr10, expr1,
+								expr5, expr4, expr6, exp13, exp14, exp15
+					HAVING student_unit_attempt.unit_funding_source NOT IN ('11N','11V','11H')
+					AND student_unit_attempt.delivery_remoteness = 'REMOTE'
 					""")
 		'''
-		# q518a - tested NOT OK - need to fix logic
+		# q518a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE team_activity
 					SET team_activity.total_target = ahc, team_activity.remote_target = ahc
 					FROM xlookup_target
-					WHERE team_activity.Remoteness = xlookup_target.Remoteness
+					WHERE team_activity.remoteness = xlookup_target.remoteness
 					AND team_activity.contract_course = xlookup_target.contract_course_unit
 					AND team_activity.unit_delivery_team = xlookup_target.contract_team
 					AND team_activity.funding_source = xlookup_target.funding
-					AND team_activity.remoteness='remote'
-					AND ((team_activity.[Funding Source])<>"11n" And (team_activity.[Funding Source])<>"11V" And (team_activity.[Funding Source])<>"11h")
-					AND xlookup_target.ahc<>0
+					AND team_activity.remoteness = 'REMOTE'
+					AND team_activity.funding_source NOT IN ('11N','11V','11H')
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q518b - tested NOT OK - large query look at ways to implement this
+		# q518b - NOT tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Unit Delivery Team], Division, Location, [Funding Source], [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Urban Target], [Urban Enrolled], [Urban resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [remote Target], [remote Enrolled], [remote resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, Sum(xlookup_TARGET.AHC) AS SumOfAHC, 0 AS Expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, Sum(xlookup_TARGET.AHC) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM (xlookup_TARGET LEFT JOIN TEAM_ACTIVITY ON (xlookup_TARGET.[Contract Team] = TEAM_ACTIVITY.[Unit Delivery Team]) AND (xlookup_TARGET.Remoteness = TEAM_ACTIVITY.Remoteness) AND (xlookup_TARGET.Funding = TEAM_ACTIVITY.[Funding Source]) AND (xlookup_TARGET.[Contract Course/Unit] = TEAM_ACTIVITY.[Contract Course])) INNER JOIN xlookup_COURSE ON xlookup_TARGET.[Contract Course/Unit] = xlookup_COURSE.Code
-					GROUP BY xlookup_TARGET.[Contract Team], xlookup_TARGET.[Division/School], xlookup_TARGET.Location, xlookup_TARGET.Funding, xlookup_TARGET.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_TARGET.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
-					HAVING (((xlookup_TARGET.Funding) Not In ("11N","11V","11H")) AND ((xlookup_TARGET.Remoteness)="remote") AND ((TEAM_ACTIVITY.[Unit Delivery Team]) Is Null) AND ((TEAM_ACTIVITY.Location) Is Null) AND ((TEAM_ACTIVITY.[Contract Course]) Is Null) AND ((TEAM_ACTIVITY.[Funding Source]) Is Null) AND ((TEAM_ACTIVITY.Remoteness) Is Null));
+					INSERT INTO TEAM_ACTIVITY ( unit delivery team, division, location, funding source, contract course,
+												contract course name, remoteness, total target, total enrolled,
+												total resulted, urban target, urban enrolled, urban resulted,
+												regional target, regional enrolled, regional resulted, remote target,
+												remote enrolled, remote resulted, interstate target, interstate enrolled,
+												interstate resulted )
+					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
+							xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
+							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
+							0 AS expr7, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12,
+							SUM(xlookup_target.ahc) AS sum_of_ahc1, 0 AS expr5, 0 AS expr6, 0 AS exp13, 0 AS exp14, 0 AS exp15
+					FROM xlookup_target
+					LEFT JOIN team_activity
+					ON xlookup_target.contract_team = team_activity.unit_delivery_team
+					AND xlookup_target.remoteness = team_activity.remoteness
+					AND xlookup_target.funding = team_activity.funding_source
+					AND xlookup_target.contract_course_unit = team_activity.contract_course
+					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
+					GROUP BY xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.Location, xlookup_target.Funding, xlookup_target.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_target.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
+					HAVING xlookup_target.funding NOT IN ('11N','11V','11H')
+					AND xlookup_target.Remoteness = 'REMOTE'
+					AND team_activity.unit_delivery_team IS NULL
+					AND team_activity.location IS NULL
+					AND team_activity.contract course IS NULL
+					AND team_activity.funding_source IS NULL
+					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q519 - tested NOT OK - larege query need to determine other ways of implementing this
+		# q519 - NOT tested NOT OK
 		'''
 		cur.execute("""
-					INSERT INTO TEAM_ACTIVITY ( [Funding Source], Division, [Contract Course], [Contract Course Name], Remoteness, [Total Target], [Total Enrolled], [Total Resulted], [Unit Delivery Team], [Urban Target], [Urban Enrolled], [Urban resulted], [Remote Target], [Remote Enrolled], [Remote Resulted], [Regional Target], [Regional Enrolled], [Regional Resulted], [Interstate Target], [Interstate Enrolled], [Interstate Resulted] )
-					SELECT DISTINCT STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], 0 AS Expr7, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC], xlookup_TEAM.Description, 0 AS Expr8, 0 AS Expr9, 0 AS Expr10, 0 AS Expr1, 0 AS Exp11, 0 AS Exp12, 0 AS Expr5, 0 AS Expr4, 0 AS Expr6, 0 AS exp13, Sum(STUDENT_UNIT_ATTEMPT.[Enrolled AHC]) AS [SumOfEnrolled AHC1], Sum(STUDENT_UNIT_ATTEMPT.[Resulted AHC]) AS [SumOfResulted AHC1]
-					FROM STUDENT_UNIT_ATTEMPT, xlookup_TEAM
-					WHERE (((Left([code],3))=[delivery location team]) AND ((STUDENT_UNIT_ATTEMPT.Outcome)<>"SW" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"NS" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"CT" And (STUDENT_UNIT_ATTEMPT.Outcome)<>"RPL-CA"))
-					GROUP BY STUDENT_UNIT_ATTEMPT.[Unit Funding Source], STUDENT_UNIT_ATTEMPT.Division, STUDENT_UNIT_ATTEMPT.[Course Code], STUDENT_UNIT_ATTEMPT.[Course Name], STUDENT_UNIT_ATTEMPT.[Delivery Remoteness], xlookup_TEAM.Description, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-					HAVING (((STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11n" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11v" And (STUDENT_UNIT_ATTEMPT.[Unit Funding Source])<>"11h") AND ((STUDENT_UNIT_ATTEMPT.[Delivery Remoteness])="interstate"));
+					INSERT INTO team_activity ( funding_source, division, contract_course, contract course name,
+												remoteness, total target, total enrolled, total resulted,
+												unit delivery team, urban target, urban enrolled, urban resulted,
+												remote target, remote enrolled, remote resulted, regional target,
+												regional enrolled, regional resulted, interstate target, interstate enrolled,
+												interstate resulted )
+					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division, student_unit_attempt.course_code,
+									student_unit_attempt.course_name, student_unit_attempt.delivery_remoteness, 0 AS expr7,
+									SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc, SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc,
+									xlookup_team.description, 0 AS expr8, 0 AS expr9, 0 AS expr10, 0 AS expr1, 0 AS exp11,
+									0 AS exp12, 0 AS expr5, 0 AS expr4, 0 AS expr6, 0 AS exp13, SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc1,
+									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1
+					FROM student_unit_attempt, xlookup_team
+					WHERE LEFT(code,3) = delivery_location team
+					AND student_unit_attempt.outcome NOT IN ('SW','NS','CT','RPL-CA')
+					GROUP BY 	student_unit_attempt.unit_funding_source,
+								student_unit_attempt.division,
+								student_unit_attempt.course_code,
+								student_unit_attempt.course_name,
+								student_unit_attempt.delivery_remoteness,
+								xlookup_team.description, expr7, expr8, expr9, expr10,
+								expr1, exp11, exp12, expr5, expr4, expr6, exp13
+					HAVING student_unit_attempt.unit_funding_source NOT IN ('11N','11V','11H')
+					AND student_unit_attempt.delivery_remoteness = 'INTERSTATE'
 					""")
 		'''
 		# q519a - tested NOT OK
@@ -4061,9 +4245,9 @@ if __name__ == '__main__':
 					AND team_activity.unit_delivery_team = xlookup_target.contract_team
 					AND team_activity.contract_course = xlookup_target.contract_course_unit
 					AND team_activity.remoteness = xlookup_target.remoteness
-					AND team_activity.remoteness='interstate'
-					AND ((team_activity.[Funding Source])<>"11n" And (team_activity.[Funding Source])<>"11V" And (team_activity.[Funding Source])<>"11h")
-					AND xlookup_target.ahc<>0
+					AND team_activity.remoteness = 'INTERSTATE'
+					AND team_activity.funding_source NOT IN ("11n","11V","11h")
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
 		# q519b - tested NOT OK - implementation may not be correct
@@ -4076,38 +4260,80 @@ if __name__ == '__main__':
 												remote_resulted, interstate_target )
 					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location, xlookup_target.funding,
 							xlookup_target.contract_course_unit, xlookup_course.description, xlookup_target.remoteness,
-							Sum(xlookup_target.ahc) AS Sum_of_ahc, 0 AS Expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8,
-							0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS expr5, 0 AS expr6, Sum(xlookup_target.ahc) AS sum_of_ahc_1
-					FROM (	(xlookup_target
-							LEFT JOIN team_activity
-							ON xlookup_target.contract_course_unit = team_activity.contract_course
-							AND xlookup_target.funding = team_activity.funding_source
-							AND xlookup_target.remoteness = team_activity.remoteness
-							AND xlookup_target.contract_team = team_activity.unit_delivery_team)
-							INNER JOIN xlookup_course
-							ON xlookup_target.contract_course_unit = xlookup_course.code)
+							SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2, 0 AS expr7, 0 AS expr8,
+							0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS expr5, 0 AS expr6,
+							SUM(xlookup_target.ahc) AS sum_of_ahc_1
+					FROM xlookup_target
+					LEFT JOIN team_activity
+					ON xlookup_target.contract_course_unit = team_activity.contract_course
+					AND xlookup_target.funding = team_activity.funding_source
+					AND xlookup_target.remoteness = team_activity.remoteness
+					AND xlookup_target.contract_team = team_activity.unit_delivery_team
+					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
 					GROUP BY 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
 								xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
 								xlookup_target.remoteness, 0, team_activity.unit_delivery_team, team_activity.location,
 								team_activity.contract_course, team_activity.funding_source, team_activity.remoteness,
-								0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-					HAVING xlookup_target.Funding not in ('11N','11V',11H)
-					AND xlookup_target.remoteness)='interstate'
-					AND team_activity.unit_delivery_team is NULL
-					AND team_activity.Location) is NULL
-					AND team_activity.contract_course is NULL
-					AND team_activity.funding_source is NULL
-					AND team_activity.Remoteness) is NULL
+								expr1, expr2, expr7, expr8, expr9, expr10, expr11, expr12, exp13, expr5, expr6
+					HAVING xlookup_target.funding NOT IN ('11N','11V',11H)
+					AND xlookup_target.remoteness = 'INTERSTATE'
+					AND team_activity.unit_delivery_team IS NULL
+					AND team_activity.location IS NULL
+					AND team_activity.contract_course IS NULL
+					AND team_activity.funding_source IS NULL
+					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q520 - large query try to find an alternative way to do this
+		# q520 - NOT tested NOT OK (not sure if implemented correctly)
 		'''
 		cur.execute("""
-					SELECT DISTINCT WEEKLY_CURRENT.[Delivery Location Team], WEEKLY_CURRENT.[course admin Team], WEEKLY_CURRENT.[Student ID], WEEKLY_CURRENT.ATSI, WEEKLY_CURRENT.Age, xlookup_AGE_GROUP.[Age Range], WEEKLY_CURRENT.[Disability Flag], WEEKLY_CURRENT.[Employment Category], XLOOKUP_EMPLOYMENT_STATUS.Employment_Status_Description, WEEKLY_CURRENT.[Residential Postcode], WEEKLY_CURRENT.[Highest School Level Completed Code], xlookup_School_Level.School_Level_Description, WEEKLY_CURRENT.[Highest School Level Completed Year], WEEKLY_CURRENT.[Birth Country Code], xlookup_Country.full_name AS Birth_Country_Name, WEEKLY_CURRENT.[Home Language Code], xlookup_Language.full_name AS Home_Language_Name, WEEKLY_CURRENT.[Highest Prior Education Level Completed Code], xlookup_PRIOR_EDUCATION_LEVEL.Description AS Prior_Education_Level, WEEKLY_CURRENT.[At School Indicator], WEEKLY_CURRENT.[VET in School Indicator], WEEKLY_CURRENT.[Course Industry], xlookup_DET_INDUSTRY.Description AS Course_Industry_Description, xlookup_FOE2.Description AS FOE2_Description, xlookup_FOE4.Description AS [FOE4 Description], xlookup_COURSE.Level AS [Course Level], xlookup_LEVEL.Description AS Course_Level_Description, WEEKLY_CURRENT.[Course Code], xlookup_COURSE.Description AS [Course Name], WEEKLY_CURRENT.[Unit Code], WEEKLY_CURRENT.[Unit Name], WEEKLY_CURRENT.[Unit Funding Source], WEEKLY_CURRENT.Grade, WEEKLY_CURRENT.[Unit Delivery Location], WEEKLY_CURRENT.[Enrol Date], WEEKLY_CURRENT.[Result Date], WEEKLY_CURRENT.Outcome, WEEKLY_CURRENT.[Fee Category], WEEKLY_CURRENT.[Enrolled AHC], WEEKLY_CURRENT.[Resulted AHC], VET_APPRENTICE.API_ID, VET_APPRENTICE.API_START_DATE, VET_APPRENTICE.API_END_DATE, VET_APPRENTICE.ADDR_TYPE, VET_APPRENTICE.ADDR_START_DATE, VET_APPRENTICE.ADDR_END_DATE, VET_APPRENTICE.ADDR_LINE1, VET_APPRENTICE.ADDR_LINE2, VET_APPRENTICE.ADDR_LINE3, VET_APPRENTICE.ADDR_LINE4, VET_APPRENTICE.ADDR_LINE5, Format([ADDR_AUST_POSTCODE],"0000") AS ADDR_AUST_PC, VET_APPRENTICE.PHONE_1, VET_APPRENTICE.PHONE_2, VET_APPRENTICE.PHONE_3, VET_APPRENTICE.OTHER_DETAILS INTO APPRENTICE_MEGA
-					FROM (((xlookup_FOE2 INNER JOIN (xlookup_LEVEL INNER JOIN xlookup_COURSE ON xlookup_LEVEL.[Level Code] = xlookup_COURSE.Level) ON xlookup_FOE2.Code = xlookup_COURSE.FOE2) INNER JOIN xlookup_FOE4 ON xlookup_COURSE.FOE4 = xlookup_FOE4.Code) INNER JOIN ((((((xlookup_Language INNER JOIN (WEEKLY_CURRENT INNER JOIN xlookup_Country ON WEEKLY_CURRENT.[Birth Country Code] = xlookup_Country.identifier) ON xlookup_Language.identifier = WEEKLY_CURRENT.[Home Language Code]) INNER JOIN xlookup_PRIOR_EDUCATION_LEVEL ON WEEKLY_CURRENT.[Highest Prior Education Level Completed Code] = xlookup_PRIOR_EDUCATION_LEVEL.[Level Code]) INNER JOIN xlookup_DET_INDUSTRY ON WEEKLY_CURRENT.[Course Industry] = xlookup_DET_INDUSTRY.Code) INNER JOIN xlookup_AGE_GROUP ON WEEKLY_CURRENT.Age = xlookup_AGE_GROUP.Age) INNER JOIN xlookup_School_Level ON WEEKLY_CURRENT.[Highest School Level Completed Code] = xlookup_School_Level.School_Level_Code) INNER JOIN XLOOKUP_EMPLOYMENT_STATUS ON WEEKLY_CURRENT.[Employment Category] = XLOOKUP_EMPLOYMENT_STATUS.Employment_Status_Code) ON xlookup_COURSE.Code = WEEKLY_CURRENT.[Course Code]) INNER JOIN VET_APPRENTICE ON (WEEKLY_CURRENT.TCI = VET_APPRENTICE.API_ID) AND (WEEKLY_CURRENT.[Student ID] = VET_APPRENTICE.PERSON_ID) AND (WEEKLY_CURRENT.[Unit Code] = VET_APPRENTICE.UNIT_CD) AND (WEEKLY_CURRENT.[Course Code] = VET_APPRENTICE.COURSE_CODE);
+					SELECT DISTINCT weekly_current.delivery_location_team, weekly_current.course_admin_team,
+									weekly_current.student_id, weekly_current.atsi, weekly_current.age,
+									xlookup_age_group.age_range, weekly_current.disability_flag,
+									weekly_current.employment_category, xlookup_employment_status.employment_status_description,
+									weekly_current.residential_postcode, weekly_current.highest_school_level_completed_code,
+									xlookup_school_level.school_level_description, weekly_current.highest_school_level_completed_year,
+									weekly_current.birth_country_code, xlookup_country.full_name AS birth_country_name,
+									weekly_current.home_language_code, xlookup_language.full_name AS home_language_name,
+									weekly_current.highest_prior_education_level_completed_code,
+									xlookup_prior_education_level.description AS prior_education_level,
+									weekly_current.at_school_indicator, weekly_current.vet_in_school_indicator,
+									weekly_current.course_industry, xlookup_det_industry.description AS course_industry_description,
+									xlookup_foe2.description AS foe2_description, xlookup_foe4.description AS foe4_description,
+									xlookup_course.level AS course_level, xlookup_level.description AS course_level_description,
+									weekly_current.course_code, xlookup_course.description AS course_name,
+									weekly_current.unit_code, weekly_current.unit_name, weekly_current.unit_funding_source,
+									weekly_current.grade, weekly_current.unit_delivery_location, weekly_current.enrol_date,
+									weekly_current.result_date, weekly_current.outcome, weekly_current.fee_category,
+									weekly_current.enrolled_ahc, weekly_current.resulted_ahc, vet_apprentice.api_id,
+									vet_apprentice.api_start_date, vet_apprentice.api_end_date, vet_apprentice.addr_type,
+									vet_apprentice.addr_start_date, vet_apprentice.addr_end_date, vet_apprentice.addr_line1,
+									vet_apprentice.addr_line2, vet_apprentice.addr_line3, vet_apprentice.addr_line4,
+									vet_apprentice.addr_line5, format(addr_aust_postcode,"0000") AS addr_aust_pc,
+									vet_apprentice.phone_1, vet_apprentice.phone_2, vet_apprentice.phone_3, vet_apprentice.other_details
+					INTO apprentice_mega
+					FROM xlookup_foe2
+					INNER JOIN xlookup_level
+						INNER JOIN xlookup_course ON xlookup_LEVEL.Level Code = xlookup_course.Level
+					ON xlookup_foe2.code = xlookup_course.foe2
+					INNER JOIN xlookup_foe4 ON xlookup_course.foe4 = xlookup_foe4.code
+					INNER JOIN xlookup_language
+					INNER JOIN (weekly_current
+						INNER JOIN xlookup_country ON weekly_current.birth_country_code = xlookup_country.identifier
+					ON xlookup_Language.identifier = weekly_current.home_language_code
+					INNER JOIN xlookup_prior_education_level ON weekly_current.highest_prior_education_level_completed_code = xlookup_prior_education_level.level_code
+					INNER JOIN xlookup_det_industry ON weekly_current.course_industry = xlookup_det_industry.code
+					INNER JOIN xlookup_age_group ON weekly_current.age = xlookup_age_group.age
+					INNER JOIN xlookup_school_level ON weekly_current.highest_school_level_completed_code = xlookup_school_level.school_level_code
+					INNER JOIN xlookup_employment_status ON weekly_current.employment_category = xlookup_employment_status.employment_status_code ON xlookup_course.code = weekly_current.course_code
+					INNER JOIN vet_apprentice
+					ON weekly_current.tci = vet_apprentice.api_id
+					AND weekly_current.student_id = vet_apprentice.person_id
+					AND weekly_current.unit_code = vet_apprentice.unit_cd
+					AND weekly_current.course_code = vet_apprentice.course_code
 					""")
 		'''
-		# q521 - tested NOT OK
+		# q521 - NOT tested NOT OK
 		'''
 		cur.execute("""
 					SELECT DISTINCT delivery_location_team, student_id,
@@ -4137,17 +4363,71 @@ if __name__ == '__main__':
 					WHERE apprentice_mega.api_end_date is NULL
 					""")
 		'''
-		# q522 - tested NOT OK - large query need to find another way to implement
+		# q522 - NOT tested NOT OK
 		'''
 		cur.execute("""
-					SELECT DISTINCT APPRENTICE_MEGA.[Course Admin Team], APPRENTICE_MEGA.[Student ID], APPRENTICE_MEGA.ATSI, APPRENTICE_MEGA.[Age Range], APPRENTICE_MEGA.[Disability Flag], APPRENTICE_MEGA.[Employment Category], APPRENTICE_MEGA.Employment_Status_Description AS [Employment Category Description], APPRENTICE_MEGA.[Residential Postcode], APPRENTICE_MEGA.[Highest School Level Completed Code], APPRENTICE_MEGA.School_Level_Description AS [Highest School Level Completed], APPRENTICE_MEGA.[Highest School Level Completed Year], APPRENTICE_MEGA.Birth_Country_Name AS [Country of Birth], APPRENTICE_MEGA.Home_Language_Name AS [Language], APPRENTICE_MEGA.Prior_Education_Level AS [Highest Prior Education Level Completed], APPRENTICE_MEGA.[At School Indicator], APPRENTICE_MEGA.Course_Industry_Description AS Industry, APPRENTICE_MEGA.FOE2_Description AS FOE2, APPRENTICE_MEGA.[FOE4 Description] AS FOE4, APPRENTICE_MEGA.Course_Level_Description AS [Course Level Description], APPRENTICE_MEGA.[Course Code], APPRENTICE_MEGA.[Course Name], APPRENTICE_MEGA.[Unit Funding Source], APPRENTICE_MEGA.API_ID AS TCI, APPRENTICE_MEGA.API_START_DATE AS [TCI Start Date], APPRENTICE_MEGA.API_END_DATE AS [TCI End Date], Sum(APPRENTICE_MEGA.[Enrolled AHC]) AS [SumOfEnrolled AHC], Sum(APPRENTICE_MEGA.[Resulted AHC]) AS [SumOfResulted AHC], APPRENTICE_MEGA.ADDR_START_DATE AS [Address Start Date], APPRENTICE_MEGA.ADDR_END_DATE AS [Address End Date], APPRENTICE_MEGA.ADDR_LINE1 AS [Employer or Business Name], APPRENTICE_MEGA.ADDR_LINE2 AS [Employer Address Line 1], APPRENTICE_MEGA.ADDR_LINE3 AS [Employer Address Line 2], APPRENTICE_MEGA.ADDR_LINE4 AS [Employer Suburb], APPRENTICE_MEGA.ADDR_LINE5 AS [Employer State], APPRENTICE_MEGA.ADDR_AUST_PC AS [Employer Postcode], APPRENTICE_MEGA.PHONE_1 AS [Employer Phone Number], APPRENTICE_MEGA.PHONE_2 AS [Employer Fax Number], APPRENTICE_MEGA.PHONE_3 AS [Employer Contact Name], APPRENTICE_MEGA.OTHER_DETAILS AS [Employer Email Details] INTO APPRENTICE_COURSE
-					FROM APPRENTICE_MEGA
-					GROUP BY APPRENTICE_MEGA.[Course Admin Team], APPRENTICE_MEGA.[Student ID], APPRENTICE_MEGA.ATSI, APPRENTICE_MEGA.[Age Range], APPRENTICE_MEGA.[Disability Flag], APPRENTICE_MEGA.[Employment Category], APPRENTICE_MEGA.Employment_Status_Description, APPRENTICE_MEGA.[Residential Postcode], APPRENTICE_MEGA.[Highest School Level Completed Code], APPRENTICE_MEGA.School_Level_Description, APPRENTICE_MEGA.[Highest School Level Completed Year], APPRENTICE_MEGA.Birth_Country_Name, APPRENTICE_MEGA.Home_Language_Name, APPRENTICE_MEGA.Prior_Education_Level, APPRENTICE_MEGA.[At School Indicator], APPRENTICE_MEGA.Course_Industry_Description, APPRENTICE_MEGA.FOE2_Description, APPRENTICE_MEGA.[FOE4 Description], APPRENTICE_MEGA.Course_Level_Description, APPRENTICE_MEGA.[Course Code], APPRENTICE_MEGA.[Course Name], APPRENTICE_MEGA.[Unit Funding Source], APPRENTICE_MEGA.API_ID, APPRENTICE_MEGA.API_START_DATE, APPRENTICE_MEGA.API_END_DATE, APPRENTICE_MEGA.ADDR_START_DATE, APPRENTICE_MEGA.ADDR_END_DATE, APPRENTICE_MEGA.ADDR_LINE1, APPRENTICE_MEGA.ADDR_LINE2, APPRENTICE_MEGA.ADDR_LINE3, APPRENTICE_MEGA.ADDR_LINE4, APPRENTICE_MEGA.ADDR_LINE5, APPRENTICE_MEGA.ADDR_AUST_PC, APPRENTICE_MEGA.PHONE_1, APPRENTICE_MEGA.PHONE_2, APPRENTICE_MEGA.PHONE_3, APPRENTICE_MEGA.OTHER_DETAILS, APPRENTICE_MEGA.ADDR_TYPE
-					HAVING (((APPRENTICE_MEGA.API_END_DATE) Is Null) AND ((APPRENTICE_MEGA.ADDR_END_DATE) Is Null) AND ((APPRENTICE_MEGA.ADDR_TYPE)="EMPLOYER"))
-					ORDER BY APPRENTICE_MEGA.[Student ID];
+					SELECT DISTINCT course_admin_team, student_id, atsi, age_range, disability_flag, employment_category,
+									employment_status_description AS employment_category_description, residential_postcode,
+									highest_school_level_completed_code, school_level_description AS highest_school_level_completed,
+									highest_school_level_completed_year, birth_country_name AS country_of_birth,
+									home_language_name AS language, prior_education_level AS highest_prior_education_level_completed,
+									at_school_indicator, course_industry_description AS industry, foe2_description AS foe2,
+									foe4_description AS foe4, course_level_description AS course_level_description, course_code,
+									course_name, unit_funding_source, api_id AS tci, api_start_date AS tci_start_date,
+									api_end_date AS tci_end_date, SUM(enrolled_ahc) AS sum_of_enrolled_ahc,
+									sum(resulted_ahc) AS sum_of_resulted_ahc, addr_start_date AS address_start_date,
+									addr_end_date AS address_end_date, addr_line1 AS employer_or_business_name,
+									addr_line2 AS employer_address_line_1, addr_line3 AS employer_address_line_2,
+									addr_line4 AS employer_suburb, addr_line5 AS employer_state, addr_aust_pc AS employer_postcode,
+									phone_1 AS employer_phone_number, phone_2 AS employer_fax_number, phone_3 AS employer_contact_name,
+									other_details AS employer_email_details
+					INTO apprentice_course
+					FROM apprentice_mega
+					GROUP BY 	apprentice_mega.course_admin_team,
+								apprentice_mega.student_id,
+								apprentice_mega.atsi,
+								apprentice_mega.age_range,
+								apprentice_mega.disability_flag,
+								apprentice_mega.employment_category,
+								apprentice_mega.employment_status_description,
+								apprentice_mega.residential_postcode,
+								apprentice_mega.highest_school_level_completed_code,
+								apprentice_mega.school_level_description,
+								apprentice_mega.highest_school_level_completed_year,
+								apprentice_mega.birth_country_name,
+								apprentice_mega.home_language_name,
+								apprentice_mega.prior_education_level,
+								apprentice_mega.at_school_indicator,
+								apprentice_mega.course_industry_description,
+								apprentice_mega.foe2_description,
+								apprentice_mega.foe4_description,
+								apprentice_mega.course_level_description,
+								apprentice_mega.course_code,
+								apprentice_mega.course_name,
+								apprentice_mega.unit_funding_source,
+								apprentice_mega.api_id,
+								apprentice_mega.api_start_date,
+								apprentice_mega.api_end_date,
+								apprentice_mega.addr_start_date,
+								apprentice_mega.addr_end_date,
+								apprentice_mega.addr_line1,
+								apprentice_mega.addr_line2,
+								apprentice_mega.addr_line3,
+								apprentice_mega.addr_line4,
+								apprentice_mega.addr_line5,
+								apprentice_mega.addr_aust_pc,
+								apprentice_mega.phone_1,
+								apprentice_mega.phone_2,
+								apprentice_mega.phone_3,
+								apprentice_mega.other_details,
+								apprentice_mega.addr_type
+					HAVING apprentice_mega.api_end_date IS NULL
+					AND apprentice_mega.addr_end_date IS NULL
+					AND apprentice_mega.addr_type = 'EMPLOYER'
+					ORDER BY apprentice_mega.student_id
 					""")
 		'''
-		# q524 - tested NOT OK
+		# q524 - NOT tested NOT OK
 		'''
 		cur.execute("""
 					INSERT INTO vet_course_completions_2018 ( 	student_id, student_last_name, student_first_name,
@@ -4170,18 +4450,22 @@ if __name__ == '__main__':
 							vet_course_completions.course_commencement_date, vet_course_completions.course_attempt_status,
 							vet_course_completions.course_requirements_completed_date, vet_course_completions.sca_funding_source,
 							vet_course_completions.course_admin_location, vet_course_completions.course_admin_team,
-							vet_course_completions.course_delivery_mode, vet_course_completions.study_reason, "" AS study_reason_description,
+							vet_course_completions.course_delivery_mode, vet_course_completions.study_reason, '' AS study_reason_description,
 							vet_course_completions.vet_in_school_indicator, vet_course_completions.unit_only_enrolment_indicator, "" AS highest_school_level_completed,
 							vet_course_completions.highest_school_level_completed_code, vet_course_completions.highest_school_level_completed_year,
 							vet_course_completions.residential_postcode, vet_course_completions.home_language_code,
 							vet_course_completions.birth_country_code, vet_course_completions.at_school_indicator,
-							IIf([ATSI_status] In ('1','2','3'),'Y',
-							IIf([ATSI_Status] In ("@","4"),"N")) AS ATSI,
-							vet_course_completions.[Employment Category], "" AS [Employment Category Description], vet_course_completions.[Conferral Date], vet_course_completions.[VET School Name], vet_course_completions.[USI Flag], vet_course_completions.[Entitlement Contract Description]
-					FROM vet_course_completions;
+							(CASE
+								WHEN atsi_status IN ('1','2','3') THEN 'Y'
+								WHEN atsi_status IN ('@','4') THEN 'N'
+							END) AS atsi,
+							vet_course_completions.employment_category, '' AS employment_category_description,
+							vet_course_completions.conferral_date, vet_course_completions.vet_school_name,
+							vet_course_completions.usi_flag, vet_course_completions.entitlement_contract_description
+					FROM vet_course_completions
 					""")
 		'''
-		# q524a - tested NOT OK - untested
+		# q524a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE vet_course_completions_2018
@@ -4190,7 +4474,7 @@ if __name__ == '__main__':
 					WHERE vet_course_completions_2018.study_reason = xlookup_study_reason.study_reason_id
 					""")
 		'''
-		# q524b - tested NOT OK
+		# q524b - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE vet_course_completions_2018
@@ -4199,16 +4483,16 @@ if __name__ == '__main__':
 					WHERE vet_course_completions_2018.highest_school_level_completed_code = xlookup_school_level.school_level_code
 					""")
 		'''
-		# q524c - tested NOT OK
+		# q524c - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE vet_course_completions_2018
 					SET vet_course_completions_2018.highest_school_level_completed_year = '@@@@'
 					WHERE vet_course_completions_2018.highest_school_level_completed_year is NULL
-					OR vet_course_completions_2018.highest_school_level_completed_year=""
+					OR vet_course_completions_2018.highest_school_level_completed_year=''
 					""")
 		'''
-		# q524d - tested NOT OK
+		# q524d - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE vet_course_completions_2018
@@ -4217,7 +4501,7 @@ if __name__ == '__main__':
 					WHERE vet_course_completions_2018.employment_category = xlookup_employment_status.employment_status_code
 					""")
 		'''
-		# q530 - tested NOT OK
+		# q530 - NOT tested NOT OK
 		'''
 		cur.execute("""
 					SELECT xref_etp_sca.division, xref_etp_sca.unit_delivery_team, xref_etp_sca.course_code,
@@ -4228,66 +4512,72 @@ if __name__ == '__main__':
 					FROM xref_etp_sca;
 					""")
 		'''
-		# q531a - tested NOT OK
+		# q531a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					INSERT INTO etp_activity ( division, unit_delivery_team, team_target_ahc, target_sca )
-					SELECT xlookup_etp_targets.division, xlookup_etp_targets.unit_delivery_team, xlookup_etp_targets.team_target_ahc, xlookup_etp_targets.team_target_headcount
-					FROM xlookup_etp_targets;
+					SELECT 	xlookup_etp_targets.division, xlookup_etp_targets.unit_delivery_team,
+							xlookup_etp_targets.team_target_ahc, xlookup_etp_targets.team_target_headcount
+					FROM xlookup_etp_targets
 					""")
 		'''
-		# q532a - tested NOT OK - not fully implemented properly
+		# q532a - NOT tested NOT OK - not fully implemented properly
 		'''
 		cur.execute("""
 					INSERT INTO etp_activity ( 	division, unit_delivery_team, course_code, successful_ahc_ca_rpl,
 												funded_enrolled_sca, funded_enrolled_ahc )
-					SELECT 	xlookup_division.division, xlookup_team.Description, weekly_current.[Course Code],
-							0 AS Expr1, 0 AS Expr2, Sum(weekly_current.[Enrolled AHC]) AS [SumOfEnrolled AHC]
+					SELECT 	xlookup_division.division, xlookup_team.description, weekly_current.course_code,
+							0 AS expr1, 0 AS expr2, SUM(weekly_current.enrolled_ahc) AS sum_of_enrolled_ahc
 					FROM weekly_current
-					INNER JOIN (xlookup_team
-								INNER JOIN xlookup_division
-								ON xlookup_team.Code = xlookup_division.Team_Code)
-					ON weekly_current.[Delivery Location Team] = xlookup_division.Team_Code
-					WHERE (((weekly_current.Grade) Is Null)
-					AND ((xlookup_team.[2018 Current])="Y")
-					AND ((weekly_current.[Unit Funding Source])="ETP"))
-					OR (((weekly_current.Grade) Not In ("CT","NS","SW","RPL-CA"))
-					AND ((xlookup_team.[2018 Current])="Y")
-					AND ((weekly_current.[Unit Funding Source])="ETP"))
-					GROUP BY xlookup_division.Division, xlookup_team.Description, weekly_current.[Course Code], 0
-					HAVING (((weekly_current.[Course Code])<>"LRNSUPP" Or (weekly_current.[Course Code])<>"LRNSUPP"));
+					INNER JOIN xlookup_team
+						INNER JOIN xlookup_division ON xlookup_team.code = xlookup_division.team_code
+					ON weekly_current.delivery_location_team = xlookup_division.team_code
+					WHERE weekly_current.grade IS NULL
+					AND xlookup_team.current_2018 = 'Y'
+					AND weekly_current.unit_funding_source = 'ETP'
+					OR weekly_current.grade NOT IN ('CT','NS','SW','RPL-CA')
+					AND xlookup_team.Current_2018 = 'Y'
+					AND weekly_current.unit_funding_source = 'ETP'
+					GROUP BY 	xlookup_division.division,
+								xlookup_team.description,
+								weekly_current.course_code, expr1, expr2
+					HAVING weekly_current.course_code <> 'LRNSUPP'
+					OR weekly_current.course_code <> 'LRNSUPP'
 					""")
 		'''
-		# q532b - tested NOT OK - not fully implemented (need to check logic)
+		# q532b - NOT tested NOT OK
 		'''
 		cur.execute("""
-					SELECT DISTINCT xlookup_division.Division, xlookup_team.Description, weekly_current.[Student ID], weekly_current.[Course Code]
-					INTO [Q532b Distinct Funded Enrolled ETP Headcount]
-					FROM (	weekly_current
-							INNER JOIN xlookup_division
-							ON weekly_current.[Course Admin Team] = xlookup_division.Team_Code)
-							INNER JOIN xlookup_team
-							ON xlookup_division.Team_Code = xlookup_team.Code
-					WHERE (((xlookup_team.[2018 Current])="Y")
-					AND ((weekly_current.Grade) Not In ("CT","NS","SW","RPL-CA"))
-					AND ((weekly_current.[Unit Funding Source])="ETP"))
-					OR (((xlookup_team.[2018 Current])="Y")
-					AND ((weekly_current.Grade) Is Null)
-					AND ((weekly_current.[Unit Funding Source])="ETP"))
-					GROUP BY xlookup_division.Division, xlookup_team.Description, weekly_current.[Student ID], weekly_current.[Course Code]
-					HAVING (((weekly_current.[Course Code])<>"LRNSUPP" Or (weekly_current.[Course Code])<>"LRNSUPP"));
+					SELECT DISTINCT xlookup_division.division, xlookup_team.description, weekly_current.student_id,
+									weekly_current.course_code
+					INTO q532b_distinct_funded_enrolled_etp_headcount
+					FROM weekly_current
+					INNER JOIN xlookup_division ON weekly_current.course_admin_team = xlookup_division.team_code
+					INNER JOIN xlookup_team ON xlookup_division.team_code = xlookup_team.code
+					WHERE (xlookup_team.current_2018 = 'Y'
+					AND weekly_current.grade NOT IN ('CT','NS','SW','RPL-CA')
+					AND weekly_current.unit_funding_source = 'ETP')
+					OR (xlookup_team.current_2018 = 'Y'
+					AND weekly_current.grade IS NULL
+					AND weekly_current.unit_funding_source = 'ETP')
+					GROUP BY 	xlookup_division.division,
+								xlookup_team.description,
+								weekly_current.student_id,
+								weekly_current.course_code
+					HAVING weekly_current.course_code <> 'LRNSUPP'
+					OR weekly_current.course_code <> 'LRNSUPP'
 					""")
 		'''
-		# q532c - tested NOT OK - has not been tested
+		# q532c - NOT tested NOT OK
 		'''
 		cur.execute("""
-					SELECT Division, Description, course_code, Count(student_id) AS count_of_student_id
+					SELECT division, description, course_code, COUNT(student_id) AS count_of_student_id
 					INTO q532c_count_distinct_funded_enrolled_etp_sca
 					FROM q532b_distinct_funded_enrolled_etp_headcount
 					GROUP BY division, description, course_code
 					""")
 		'''
-		# q532d - tested NOT OK
+		# q532d - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE etp_activity
@@ -4298,7 +4588,7 @@ if __name__ == '__main__':
 					AND q532c_count_distinct_funded_enrolled_etp_sca.course_code = etp_activity.course_code
 					""")
 		'''
-		# q534a - tested NOT OK
+		# q534a - NOT tested NOT OK
 		'''
 		cur.execute("""
 					SELECT xlookup_division.division, xlookup_team.description, weekly_current.course_code, Sum(weekly_current.resulted_ahc) AS successful_ahc_ca_rpl
@@ -4316,7 +4606,7 @@ if __name__ == '__main__':
 					HAVING weekly_current.course_code<>'LRNSUPP'
 					""")
 		'''
-		# q534b - tested NOT OK
+		# q534b - NOT tested NOT OK
 		'''
 		cur.execute("""
 					UPDATE q534a_successful_etp_ahc
@@ -4327,39 +4617,67 @@ if __name__ == '__main__':
 					AND q534a_successful_etp_ahc.division = etp_activity.division
 					""")
 		'''
-		# q999a - tested NOT OK - logic not implemented correctly
+		# q999a - NOT tested NOT OK
 		'''
 		cur.execute("""
-					SELECT delivery_location_team, student_id, unit_code, unit_attempt_status, teaching_period, grade, enrol_date,
-					override_activity_start_date, result_date, enrolment_activity_end_date, Course Code, Unit Funding Source, IIf(IsNull(Override Activity Start Date),Enrol Date,Override Activity Start Date) AS Start Date, IIf(IsNull(Result Date),Enrolment Activity End Date,Result Date) AS End Date, "" AS Status
+					SELECT 	delivery_location_team, student_id, unit_code, unit_attempt_status, teaching_period,
+							grade, enrol_date, override_activity_start_date, result_date, enrolment_activity_end_date,
+							Course Code, Unit Funding Source,
+							(CASE
+								WHEN override_activity_start_date IS NULL THEN enrol_date
+								ELSE override_activity_start_date
+							END) AS start_date,
+							(CASE
+								WHEN result_date IS NULL THEN enrolment_activity_end_date
+								ELSE result_date
+							END) AS end_date,
+							'' AS status
 					FROM errors_sua_duplicates_exc_sw_ct_ns_douglas_to_check
-					ORDER BY student_id, unit_code, IIf(IsNull([Override Activity Start Date),[Enrol Date],[Override Activity Start Date]);
+					ORDER BY 	student_id,
+								unit_code,
+								(CASE
+									WHEN override_activity_start_date IS NULL THEN enrol_date
+									ELSE override_activity_start_date
+								END)
 					""")
 		'''
-		# q999b - tested NOT OK - need to check logic
+		# q999b - NOT tested NOT OK
 		'''
 		cur.execute("""
-					UPDATE [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED]
-					INNER JOIN [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED] AS [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED_1]
-					ON ([ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED].[Student ID] = [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED_1].[Student ID])
-					AND ([ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED].[Unit Code] = [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED_1].[Unit Code])
-					SET [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED].Status = [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED_1].[Status]
-					WHERE ((([ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED].Status)='TO BE UPDATED') AND (([ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED_1].Status)<>'TO BE UPDATED'));
+					UPDATE errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked
+					INNER JOIN errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked AS errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked_1
+					ON errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked.student_id = errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked_1.student_id)
+					AND errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked.unit_code = errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked_1.unit_code)
+					SET errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked.status = errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked_1.status
+					WHERE errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked.status = 'TO BE UPDATED'
+					AND errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check_checked_1.status <> 'TO BE UPDATED'
 					""")
 		'''
-		# q999c - has not been implemented correctly
+		# q999c - this check SUA will need to be implemented using Python it has a non-standard script
 		'''
 		cur.execute("""
-					SELECT [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Delivery Location Team], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Student ID], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Unit Code], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Unit Attempt Status], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Teaching Period], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].Grade, [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Enrol Date], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Override Activity Start Date], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Result Date], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Enrolment Activity End Date], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Course Code], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Unit Funding Source], IIf(IsNull([Override Activity Start Date]),[Enrol Date],[Override Activity Start Date]) AS [Start Date], IIf(IsNull([Result Date]),[Enrolment Activity End Date],[Result Date]) AS [End Date], CheckSUA([Student ID],[Unit Code],[Grade],[Start Date],[End Date],[Course Code],[Result Date]) AS Status INTO [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED]
-					FROM [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK]
-					ORDER BY [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Student ID], [ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK].[Unit Code], IIf(IsNull([Override Activity Start Date]),[Enrol Date],[Override Activity Start Date]);
+					SELECT 	Delivery Location Team, Student ID, Unit Code, Unit Attempt Status, Teaching Period, Grade,
+							Enrol Date, Override Activity Start Date, Result Date, Enrolment Activity End Date,
+							Course Code, Unit Funding Source,
+							(CASE
+								WHEN override_activity_start_date IS NULL THEN enrol_date
+								ELSE override_activity_start_date
+							END) AS start_date,
+							(CASE
+								WHEN result_date IS NULL THEN enrolment_activity_end_date
+								ELSE result_date
+							END) AS end_date
+							CheckSUA(Student ID,Unit Code,Grade,Start Date,End Date,Course Code,Result Date) AS Status INTO ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK_CHECKED
+					FROM errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check
+					ORDER BY errors_sua_duplicates_ex_sw_ct_ns_douglas_to_check.Student ID, ERRORS SUA DUPLICATES (exc SW/CT/NS) DOUGLAS TO CHECK.[Unit Code, IIf(IsNull([Override Activity Start Date]),[Enrol Date],[Override Activity Start Date]);
 					""")
 		'''
 		# q999d - has not been implemented correctly
 		'''
 		cur.execute("""
 					SELECT [ERRORS SUPERSEDED UNITS - DOUGLAS].[Course Admin Team], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Student ID], IIf([UNIT CODE DESCRIPTION]='SUPERSEDED',[RELATED UNIT],[Unit Code]) AS [Current Unit Code], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Unit Code], [ERRORS SUPERSEDED UNITS - DOUGLAS].[RELATED UNIT], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Course Code], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Override Activity Start Date], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Result Date], [ERRORS SUPERSEDED UNITS - DOUGLAS].[Override Activity End Date], [ERRORS SUPERSEDED UNITS - DOUGLAS].Grade, [ERRORS SUPERSEDED UNITS - DOUGLAS].[Teaching Period], [ERRORS SUPERSEDED UNITS - DOUGLAS].[UNIT CODE DESCRIPTION], xlookup_Ntis_superseded_unit_equivalent_flag.equivalent
-					FROM [ERRORS SUPERSEDED UNITS - DOUGLAS] LEFT JOIN xlookup_Ntis_superseded_unit_equivalent_flag ON ([ERRORS SUPERSEDED UNITS - DOUGLAS].[RELATED UNIT] = xlookup_Ntis_superseded_unit_equivalent_flag.identifier) AND ([ERRORS SUPERSEDED UNITS - DOUGLAS].[Unit Code] = xlookup_Ntis_superseded_unit_equivalent_flag.superseding_identifier)
+					FROM [ERRORS SUPERSEDED UNITS - DOUGLAS]
+					LEFT JOIN xlookup_Ntis_superseded_unit_equivalent_flag ON ([ERRORS SUPERSEDED UNITS - DOUGLAS].[RELATED UNIT] = xlookup_Ntis_superseded_unit_equivalent_flag.identifier) AND ([ERRORS SUPERSEDED UNITS - DOUGLAS].[Unit Code] = xlookup_Ntis_superseded_unit_equivalent_flag.superseding_identifier)
 					ORDER BY [ERRORS SUPERSEDED UNITS - DOUGLAS].[Student ID], IIf([UNIT CODE DESCRIPTION]='SUPERSEDED',[RELATED UNIT],[Unit Code]), [ERRORS SUPERSEDED UNITS - DOUGLAS].[Result Date];
 					""")
 		'''
