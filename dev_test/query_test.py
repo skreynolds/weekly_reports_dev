@@ -3563,8 +3563,8 @@ if __name__ == '__main__':
 					AND LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_enrolled_funded.unit_delivery_team
 					""")
 		'''
-		# q510b - tested NOT OK - complicated query not implemented properly yet
-		
+		# q510b - tested NOT OK - based on funding source which is not correct
+		'''
 		cur.execute("""
 					SELECT weekly_current.delivery_location_team AS unit_delivery_team,
 					(CASE
@@ -3586,19 +3586,19 @@ if __name__ == '__main__':
 					END),
 					weekly_current.result_week
 					""")
-		
-		# q510c - tested NOT OK - testing not completed
+		'''
+		# q510c - tested NOT OK did not return any results
 		'''
 		cur.execute("""
-					UPDATE activity_pattern_resulted_funded
-					SET activity_pattern_trend.funded_resulted_2018 = activity_pattern_resulted_funded.sum_of_resulted_ahc
-					FROM activity_pattern_trend
+					UPDATE activity_pattern_trend
+					SET funded_resulted_2018 = activity_pattern_resulted_funded.sum_of_resulted_ahc
+					FROM activity_pattern_resulted_funded
 					WHERE activity_pattern_resulted_funded.funding_source = activity_pattern_trend.funding_source
 					AND activity_pattern_resulted_funded.result_week = activity_pattern_trend.week_2018
-					AND (LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_resulted_funded.unit_delivery_team
+					AND LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_resulted_funded.unit_delivery_team
 					""")
 		'''
-		# q511 - tested NOT OK - complicated query not implemented properly yet
+		# q511 - tested NOT OK - based on funding source which is not correct
 		'''
 		cur.execute("""
 					SELECT weekly_current.delivery_location_team AS unit_delivery_team,
@@ -3608,25 +3608,29 @@ if __name__ == '__main__':
 						ELSE unit_funding_source
 					END) AS funding_source,
 					weekly_current.enrol_week,
-					SUM(weekly_current.[Enrolled AHC]) AS sum_of_enrolled_ahc
+					SUM(weekly_current.enrolled_ahc) AS sum_of_enrolled_ahc
 					INTO activity_pattern_enrolled_unfunded
 					FROM weekly_current
-					GROUP BY weekly_current.delivery location team,
-
-					IIf(([UNIT FUNDING SOURCE]="ETP" And [ENTITLEMENT CONTRACT DESCRIPTION]="2017-MOA-4"),"ETP2017",IIf([UNIT FUNDING SOURCE]="ETP","ETP2016",[UNIT FUNDING SOURCE])),
-					WEEKLY_CURRENT.[Enrol Week], WEEKLY_CURRENT.Outcome
-					HAVING (((WEEKLY_CURRENT.Outcome)="CT" Or (WEEKLY_CURRENT.Outcome)="NS" Or (WEEKLY_CURRENT.Outcome)="SW" Or (WEEKLY_CURRENT.Outcome)="RPL-CA"));
+					GROUP BY weekly_current.delivery_location_team,
+					(CASE
+						WHEN unit_funding_source = 'ETP' AND  entitlement_contract_description = '2017-MOA-4' THEN 'ETP2017'
+						WHEN unit_funding_source = 'ETP' THEN 'ETP2016'
+						ELSE unit_funding_source
+					END),
+					weekly_current.enrol_week,
+					weekly_current.outcome
+					HAVING weekly_current.outcome IN ('CT','NS','SW','RPL-CA')
 					""")
 		'''
-		# q511a - tested NOT OK - not tested yet
+		# q511a - tested NOT OK - not returning any values not sure if issue with data or issue with query
 		'''
 		cur.execute("""
-					UPDATE activity_pattern_enrolled_unfunded
-					SET activity_pattern_trend.unfunded_Enrolled_2018 = activity_pattern_enrolled_unfunded.sum_of_enrolled_ahc
-					FROM activity_pattern_trend
+					UPDATE activity_pattern_trend
+					SET unfunded_Enrolled_2018 = activity_pattern_enrolled_unfunded.sum_of_enrolled_ahc
+					FROM activity_pattern_enrolled_unfunded
 					WHERE activity_pattern_enrolled_unfunded.funding_source = activity_pattern_trend.funding_source
-					AND activity_pattern_enrolled_unfunded.enrol_week = activity_pattern_trend.Week_2018
-					AND Left(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_enrolled_unfunded.unit_delivery_team
+					AND activity_pattern_enrolled_unfunded.enrol_week = activity_pattern_trend.week_2018
+					AND LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_enrolled_unfunded.unit_delivery_team
 					""")
 		'''
 		# q511b - NOT tested NOT OK
@@ -3652,7 +3656,7 @@ if __name__ == '__main__':
 					weekly_current.result_week
 					""")
 		'''
-		# q511c - NOT tested NOT OK
+		# q511c - tested NOT OK - not returning any values not sure if issue with data or issue with query
 		'''
 		cur.execute("""
 					UPDATE activity_pattern_trend
@@ -3663,24 +3667,24 @@ if __name__ == '__main__':
 					AND LEFT(activity_pattern_trend.unit_delivery_team, 3) = activity_pattern_resulted_unfunded.unit_delivery_team
 					""")
 		'''
-		# q512 - NOT tested NOT OK
+		# q512 - tested NOT OK - returns no results (something wrong with the unit attempt status field)
 		'''
 		cur.execute("""
-					INSERT INTO Unresulted_SUA_2017 (	teaching_period, student_id, course_admin_team, unit_delivery_location,
+					INSERT INTO unresulted_SUA_2017 (	teaching_period, student_id, course_admin_team, unit_delivery_location,
 														sca_funding_source, course_code, course_name, unit_code, unit_name,
 														enrolled_ahc, grade, student_last_name, student_first_name,
 														enrolment_activity_end_date, contract_team, unit_attempt_status,
 														result_type, usi_flag)
-					SELECT 	teaching_period, student_id, delivery_location_team, unit_delivery_location, unit funding source,
-							course code, course_name, unit_code, unit_name, enrolled_ahc, grade, student_last_name,
+					SELECT 	teaching_period, student_id, delivery_location_team, unit_delivery_location, unit_funding_source,
+							course_code, course_name, unit_code, unit_name, enrolled_ahc, grade, student_last_name,
 							student_first_name, enrolment_activity_end_date, contract_team, unit_attempt_status,
 							result_type, usi_flag
 					FROM weekly_2017
-					WHERE weekly_2017.Grade IN ('UR','CE','OWA','RPL')
-					AND weekly_2017.unit_attempt_status = 'Assessing'
+					WHERE weekly_2017.grade IN ('UR','CE','OWA','RPL')
+					AND weekly_2017.unit_attempt_status = 'ASSESSING'
 					""")
 		'''
-		# q513 - NOT tested NOT OK
+		# q513 - tested NOT OK - based on funding source so query could not be reliably tested
 		'''
 		cur.execute("""
 					INSERT INTO team_activity (	location, division, funding_source, contract_course, contract_course_name,
@@ -3713,7 +3717,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'URBAN'
 					""")
 		'''
-		# q513a - NOT tested NOT OK
+		# q513a - tested NOT OK - no data returned from the table (issue from previous query)
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -3725,7 +3729,7 @@ if __name__ == '__main__':
 					AND team_activity.funding_source = xlookup_target.funding
 					AND team_activity.Remoteness = 'URBAN'
 					AND team_activity.funding_source IN ('11N','11V','11H')
-					AND xlookup_target.AHC <> 0
+					AND xlookup_target.ahc <> 0
 					""")
 		'''
 		# q513b - NOT tested NOT OK (not sure if implemented correctly with LEFT JOIN)
@@ -3737,15 +3741,15 @@ if __name__ == '__main__':
 												regional_resulted, remote_target, remote_enrolled, remote_resulted,
 												interstate_target, interstate_enrolled, interstate_resulted )
 					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
-							xlookup_target.funding, xlookup_target.contract course_unit, xlookup_course.description,
+							xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
 							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
 							SUM(xlookup_target.ahc) AS sum_of_ahc1, 0 AS expr5, 0 AS expr6, 0 AS expr7, 0 AS expr8, 0 AS expr9,
 							0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
 					FROM xlookup_target
 					LEFT JOIN team_activity
-					ON xlookup_TARGET.Remoteness = team_activity.remoteness
+					ON xlookup_target.remoteness = team_activity.remoteness
 					AND xlookup_target.contract_team = team_activity.unit_delivery_team
-					AND xlookup_target.location = TEAM_ACTIVITY.Location)
+					AND xlookup_target.location = team_activity.location
 					AND xlookup_target.contract_course_unit = team_activity.contract_course
 					AND xlookup_target.funding = team_activity.funding_source
 					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
@@ -3761,7 +3765,7 @@ if __name__ == '__main__':
 								team_activity.contract_course,
 								team_activity.funding_source,
 								team_activity.remoteness, expr2, expr5, expr6, expr7, expr8,
-								expr9, expr10, expr11, expr12, expr13, expr14, expr15
+								expr9, expr10, expr11, expr12, exp13, exp14, exp15
 					HAVING xlookup_target.funding IN ('11N','11V','11H')
 					AND xlookup_target.Remoteness = 'URBAN'
 					AND team_activity.unit_delivery_team IS NULL
@@ -3771,7 +3775,7 @@ if __name__ == '__main__':
 					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q514 - NOT tested NOT OK 
+		# q514 - tested NOT OK - did not return any data (query needs to be checked) 
 		'''
 		cur.execute("""
 					INSERT INTO team_activity (	location, division, funding_source, contract_course, contract_course_name,
@@ -3780,7 +3784,7 @@ if __name__ == '__main__':
 												remote_resulted, regional_target, regional_enrolled, regional_resulted,
 												interstate_target, interstate_enrolled, interstate_resulted)
 					SELECT DISTINCT student_unit_attempt.unit_delivery_location, student_unit_attempt.division,
-									student_unit_attempt.unit_funding_source, student_unit_attempt.course code,
+									student_unit_attempt.unit_funding_source, student_unit_attempt.course_code,
 									student_unit_attempt.course_name, student_unit_attempt.delivery_remoteness,
 									0 AS expr7, SUM(student_unit_attempt.enrolled_ahc) AS sum_of_enrolled_ahc,
 									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc,
@@ -3790,7 +3794,7 @@ if __name__ == '__main__':
 									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1,
 									0 AS exp13, 0 AS exp14, 0 AS exp15
 					FROM student_unit_attempt, xlookup_team
-					WHERE LEFT(code,3)) = delivery_location_team
+					WHERE LEFT(code,3) = delivery_location_team
 					AND student_unit_attempt.outcome NOT IN ('SW','NS','CT','RPL-CA')
 					GROUP BY 	student_unit_attempt.unit_delivery_location,
 								student_unit_attempt.division,
@@ -3804,7 +3808,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'REGIONAL'
 					""")
 		'''
-		# q514a - NOT tested NOT OK
+		# q514a - tested NOT OK - did not return any 
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -3819,7 +3823,7 @@ if __name__ == '__main__':
 					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q514b - NOT tested NOT OK (need to check the join logic with this query)
+		# q514b - tested NOT OK returned data when access query did not
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source, contract_course,
@@ -3847,12 +3851,13 @@ if __name__ == '__main__':
 								xlookup_target.funding,
 								xlookup_target.contract_course_unit,
 								xlookup_course.description,
-								xlookup_target.remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								xlookup_target.remoteness, expr1, expr2, expr3, expr5,
+								expr6, expr8, expr9, expr10, expr11, expr12,
 								team_activity.unit_delivery_team,
 								team_activity.location,
 								team_activity.contract_course,
 								team_activity.funding_source,
-								team_activity.remoteness, 0, 0, 0
+								team_activity.remoteness, exp13, exp14, exp15
 					HAVING xlookup_TARGET.Funding IN ('11N','11V','11H')
 					AND xlookup_target.remoteness = 'REGIONAL'
 					AND team_activity.unit_delivery_team IS NULL
@@ -3862,7 +3867,7 @@ if __name__ == '__main__':
 					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q515 - large query need to find another way to build
+		# q515 - tested NOT OK - query did not return any results
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( location, division, funding_source, contract_course, contract_course_name,
@@ -3894,7 +3899,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'REMOTE'
 					""")
 		'''
-		# q515a - NOT tested NOT OK
+		# q515a - tested NOT OK - query did not return any data
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -3984,7 +3989,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'URBAN'
 					""")
 		'''
-		# q516a - tested NOT OK - need to check the logic
+		# q516a - tested NOT OK - did not return any query results
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -3999,7 +4004,7 @@ if __name__ == '__main__':
 					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q516b - tested NOT OK - large query need to determine how to implement
+		# q516b - tested NOT OK - did not return query results
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source, contract_course,
@@ -4011,7 +4016,7 @@ if __name__ == '__main__':
 					SELECT 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
 							xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
 							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
-							SUM(xlookup_target.ahc) AS SumOfAHC1, 0 AS expr5, 0 AS expr6, 0 AS expr7, 0 AS expr8,
+							SUM(xlookup_target.ahc) AS sum_of_ahc_1, 0 AS expr5, 0 AS expr6, 0 AS expr7, 0 AS expr8,
 							0 AS expr9, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
 					FROM xlookup_target
 					LEFT JOIN team_activity
@@ -4028,7 +4033,7 @@ if __name__ == '__main__':
 								xlookup_course.description,
 								xlookup_target.remoteness, expr1, expr2, expr5, expr6,
 								expr7, expr8, expr9, expr10, expr11, expr12,
-								team_activity.unit delivery team,
+								team_activity.unit_delivery_team,
 								team_activity.location,
 								team_activity.contract_course,
 								team_activity.funding_source,
@@ -4042,11 +4047,11 @@ if __name__ == '__main__':
 					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q517 - NOT tested NOT OK
+		# q517 - tested NOT OK - different number of lines returned from the query
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( funding_source, division, contract_course, contract_course_name, remoteness, total_target,
-												total_enrolled, total_resulted, unit_delivery team, urban_target, urban_enrolled,
+												total_enrolled, total_resulted, unit_delivery_team, urban_target, urban_enrolled,
 												urban_resulted, remote_target, remote_enrolled, remote_resulted, regional_target,
 												regional_enrolled, regional_resulted, interstate_target, interstate_enrolled, interstate_resulted )
 					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division,
@@ -4060,7 +4065,7 @@ if __name__ == '__main__':
 									SUM(student_unit_attempt.resulted_ahc) AS sum_of_resulted_ahc1,
 									0 AS exp13, 0 AS exp14, 0 AS exp15
 					FROM student_unit_attempt, xlookup_team
-					WHERE LEFT(code,3)) = delivery_location_team
+					WHERE LEFT(code,3) = delivery_location_team
 					AND (student_unit_attempt.outcome) NOT IN ('SW','NS','CT','RPL-CA')
 					GROUP BY 	student_unit_attempt.unit_funding_source,
 								student_unit_attempt.division,
@@ -4073,7 +4078,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'REGIONAL'
 					""")
 		'''
-		# q517a - NOT tested NOT OK
+		# q517a - tested NOT OK - did not return any data
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -4088,7 +4093,7 @@ if __name__ == '__main__':
 					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q517b - NOT tested NOT OK
+		# q517b - tested NOT OK - did not return any data need to check
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( unit_delivery_team, division, location, funding_source,
@@ -4102,7 +4107,7 @@ if __name__ == '__main__':
 							xlookup_target.remoteness, SUM(xlookup_target.ahc) AS sum_of_ahc, 0 AS expr1, 0 AS expr2,
 							0 AS expr7, 0 AS expr8, 0 AS expr9, SUM(xlookup_target.ahc) AS sum_of_ahc1, 0 AS expr5,
 							0 AS expr6, 0 AS expr10, 0 AS expr11, 0 AS expr12, 0 AS exp13, 0 AS exp14, 0 AS exp15
-					FROM (xlookup_target
+					FROM xlookup_target
 					LEFT JOIN team_activity
 					ON xlookup_target.remoteness = team_activity.remoteness
 					AND xlookup_target.contract_course_unit = team_activity.contract_course
@@ -4128,15 +4133,15 @@ if __name__ == '__main__':
 					AND TEAM_ACTIVITY.remoteness IS NULL
 					""")
 		'''
-		# q518 - NOT Tested NOT OK
+		# q518 - tested NOT OK - query returned a different number of results (needs further checking)
 		'''
 		cur.execute("""
-					INSERT INTO team_activity ( funding_source, division, contract_course, contract course name,
-												remoteness, total target, total enrolled, total resulted,
-												unit delivery team, urban target, urban enrolled, urban resulted,
-												remote target, remote enrolled, remote resulted, regional target,
-												regional enrolled, regional resulted, interstate target,
-												interstate enrolled, interstate resulted )
+					INSERT INTO team_activity ( funding_source, division, contract_course, contract_course_name,
+												remoteness, total_target, total_enrolled, total_resulted,
+												unit_delivery_team, urban_target, urban_enrolled, urban_resulted,
+												remote_target, remote_enrolled, remote_resulted, regional_target,
+												regional_enrolled, regional_resulted, interstate_target,
+												interstate_enrolled, interstate_resulted )
 					SELECT DISTINCT student_unit_attempt.unit_funding_source, student_unit_attempt.division,
 									student_unit_attempt.course_code, student_unit_attempt.course_name,
 									student_unit_attempt.delivery_remoteness, 0 AS expr7,
@@ -4149,7 +4154,7 @@ if __name__ == '__main__':
 					FROM student_unit_attempt, xlookup_team
 					WHERE LEFT(code,3) = delivery_location_team
 					AND student_unit_attempt.outcome NOT IN ('SW','NS','CT','RPL-CA')
-					GROUP BY 	student_unit_attempt.unit funding source,
+					GROUP BY 	student_unit_attempt.unit_funding_source,
 								student_unit_attempt.division,
 								student_unit_attempt.course_code,
 								student_unit_attempt.course_name,
@@ -4160,7 +4165,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'REMOTE'
 					""")
 		'''
-		# q518a - NOT tested NOT OK
+		# q518a - tested NOT OK - query did not return any data
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -4175,7 +4180,7 @@ if __name__ == '__main__':
 					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q518b - NOT tested NOT OK
+		# q518b - tested NOT OK - 
 		'''
 		cur.execute("""
 					INSERT INTO TEAM_ACTIVITY ( unit delivery team, division, location, funding source, contract course,
@@ -4196,17 +4201,29 @@ if __name__ == '__main__':
 					AND xlookup_target.funding = team_activity.funding_source
 					AND xlookup_target.contract_course_unit = team_activity.contract_course
 					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
-					GROUP BY xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.Location, xlookup_target.Funding, xlookup_target.[Contract Course/Unit], xlookup_COURSE.Description, xlookup_target.Remoteness, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEAM_ACTIVITY.[Unit Delivery Team], TEAM_ACTIVITY.Location, TEAM_ACTIVITY.[Contract Course], TEAM_ACTIVITY.[Funding Source], TEAM_ACTIVITY.Remoteness, 0, 0, 0
+					GROUP BY 	xlookup_target.contract_team,
+								xlookup_target.division_school,
+								xlookup_target.location,
+								xlookup_target.funding,
+								xlookup_target.contract_course_unit,
+								xlookup_course.description,
+								xlookup_target.remoteness, expr1, expr2, expr7, expr8,
+								expr9, expr10, expr11, expr12, expr5, expr5,
+								team_activity.unit_delivery_team,
+								team_activity.location,
+								team_activity.contract_course,
+								team_activity.funding_source,
+								team_activity.remoteness, exp13, exp14, exp15
 					HAVING xlookup_target.funding NOT IN ('11N','11V','11H')
-					AND xlookup_target.Remoteness = 'REMOTE'
+					AND xlookup_target.remoteness = 'REMOTE'
 					AND team_activity.unit_delivery_team IS NULL
 					AND team_activity.location IS NULL
-					AND team_activity.contract course IS NULL
+					AND team_activity.contract_course IS NULL
 					AND team_activity.funding_source IS NULL
 					AND team_activity.remoteness IS NULL
 					""")
 		'''
-		# q519 - NOT tested NOT OK
+		# q519 - tested NOT OK - query did not return any data
 		'''
 		cur.execute("""
 					INSERT INTO team_activity ( funding_source, division, contract_course, contract course name,
@@ -4235,7 +4252,7 @@ if __name__ == '__main__':
 					AND student_unit_attempt.delivery_remoteness = 'INTERSTATE'
 					""")
 		'''
-		# q519a - tested NOT OK
+		# q519a - tested NOT OK - did not return any data
 		'''
 		cur.execute("""
 					UPDATE team_activity
@@ -4246,11 +4263,11 @@ if __name__ == '__main__':
 					AND team_activity.contract_course = xlookup_target.contract_course_unit
 					AND team_activity.remoteness = xlookup_target.remoteness
 					AND team_activity.remoteness = 'INTERSTATE'
-					AND team_activity.funding_source NOT IN ("11n","11V","11h")
+					AND team_activity.funding_source NOT IN ('11N','11V','11H')
 					AND xlookup_target.ahc <> 0
 					""")
 		'''
-		# q519b - tested NOT OK - implementation may not be correct
+		# q519b - tested NOT OK did not return any data
 		'''
 		cur.execute("""
 					INSERT INTO TEAM_ACTIVITY ( unit_delivery_team, division, location, funding_source, contract_course,
@@ -4272,10 +4289,10 @@ if __name__ == '__main__':
 					INNER JOIN xlookup_course ON xlookup_target.contract_course_unit = xlookup_course.code
 					GROUP BY 	xlookup_target.contract_team, xlookup_target.division_school, xlookup_target.location,
 								xlookup_target.funding, xlookup_target.contract_course_unit, xlookup_course.description,
-								xlookup_target.remoteness, 0, team_activity.unit_delivery_team, team_activity.location,
+								xlookup_target.remoteness, team_activity.unit_delivery_team, team_activity.location,
 								team_activity.contract_course, team_activity.funding_source, team_activity.remoteness,
 								expr1, expr2, expr7, expr8, expr9, expr10, expr11, expr12, exp13, expr5, expr6
-					HAVING xlookup_target.funding NOT IN ('11N','11V',11H)
+					HAVING xlookup_target.funding NOT IN ('11N','11V','11H')
 					AND xlookup_target.remoteness = 'INTERSTATE'
 					AND team_activity.unit_delivery_team IS NULL
 					AND team_activity.location IS NULL
@@ -4285,7 +4302,7 @@ if __name__ == '__main__':
 					""")
 		'''
 		# q520 - NOT tested NOT OK (not sure if implemented correctly)
-		'''
+		
 		cur.execute("""
 					SELECT DISTINCT weekly_current.delivery_location_team, weekly_current.course_admin_team,
 									weekly_current.student_id, weekly_current.atsi, weekly_current.age,
@@ -4332,7 +4349,7 @@ if __name__ == '__main__':
 					AND weekly_current.unit_code = vet_apprentice.unit_cd
 					AND weekly_current.course_code = vet_apprentice.course_code
 					""")
-		'''
+		
 		# q521 - NOT tested NOT OK
 		'''
 		cur.execute("""
